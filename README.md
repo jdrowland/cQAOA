@@ -29,11 +29,12 @@ Rough implementation of cQAOA using gradient descent in analogy to previous refe
 
 ## To do list:
 ### Reimplement in more generality/ abstraction and with code optimizations. 
-    -IE def QAOA(costHamiltonian(costParameters),qaoaParameters) and def cQAOA(costHamiltonian(costParameters),cqaoaParameters) for general costHamiltonians, costParameters, qaoaParameters, and cqaoaParameters
+IE def QAOA(costHamiltonian(costParameters),qaoaParameters) and def cQAOA(costHamiltonian(costParameters),cqaoaParameters) for general costHamiltonians, costParameters, qaoaParameters, and cqaoaParameters
 
 ### Move towards systematic testing:
-    -Optimizing qaoaParameters, cqaoaParameters for general costParameters
-    -Define these parameters precisely and determine how they relate to one another
+Optimizing qaoaParameters, cqaoaParameters for general costParameters
+
+Define these parameters precisely and determine how they relate to one another
 
 ### Consider larger/ different problems with more local minima.
-    -IE def toyModel(costParameters)
+IE def toyModel(costParameters)
