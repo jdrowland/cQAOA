@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 import networkx as nx
 import cirq
@@ -32,6 +33,7 @@ def edge_operator(q1: cirq.Qid, q2: cirq.Qid) -> cirq.PauliSum:
 
 
 class CylicQAOAAnsatz:
+    """Class to generate cyclic QAOA Ansatz circuits."""
 
     def __init__(self, qubit_graph, observable):
         self.qubit_graph = qubit_graph
