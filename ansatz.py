@@ -69,8 +69,8 @@ class CylicQAOAAnsatz:
             gamma_plus[i] += eps
             gamma_minus = gammas.copy()
             gamma_minus[i] -= eps
-            plus_energy = maxcut_energy(gamma_plus, betas, qubit_graph, observable)
-            minus_energy = maxcut_energy(gamma_minus, betas, qubit_graph, observable)
+            plus_energy = self.energy(gamma_plus, betas)
+            minus_energy = self.energy(gamma_minus, betas)
             gamma_grad[i] = (plus_energy - minus_energy) / (2.0 * eps)
         beta_grad = np.zeros(betas.size)
         for i in range(betas.size):
@@ -78,7 +78,7 @@ class CylicQAOAAnsatz:
             beta_plus[i] += eps
             beta_minus = betas.copy()
             beta_minus[i] -= eps
-            plus_energy = maxcut_energy(gammas, beta_plus, qubit_graph, observable)
-            minus_energy = maxcut_energy(gammas, beta_minus, qubit_graph, observable)
+            plus_energy = self.energy(gammas, beta_plus)
+            minus_energy = self.energy(gammas, beta_minus)
             beta_grad[i] = (plus_energy - minus_energy) / (2.0 * eps)
         return gamma_grad, beta_grad
