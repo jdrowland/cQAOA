@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 import networkx as nx
 import cirq
@@ -17,12 +17,47 @@ def beta_layer(beta: float, qubit_graph: nx.Graph) -> cirq.Circuit:
     return beta_ckt
 
 
+def alpha_layer(alpha: float, qubit_graph: nx.Graph, reference: List[bool]) -> cirq.Circuit:
+    alpha_ckt = cirq.Circuit()
+    for i, q in enumerate(qubit_graph.nodes):
+        if reference[i]:
+            alpha_ckt.append(cirq.Z(q) ** alpha)
+    return alpha_ckt
+
+
 class CylicQAOAAnsatz:
     """Class to generate cyclic QAOA Ansatz circuits."""
 
-    def __init__(self, qubit_graph, observable):
+    def __init__(self, qubit_graph, observable, **kwargs):
+        """Initialize an instance of the CylicQAOA Ansatz.
+        
+        Arugments:
+        qubit_graph: graph determining which qubits can interact.
+        observable: observable for the problem (e.g. Hamiltonian for MaxCut)
+        
+        Optional keyword arguments:
+        reference: list of booleans, reference bitstring for the Ansatz.
+        alpha: np.ndarray, coefficient for the refence term in this Hamiltonian."""
+
         self.qubit_graph = qubit_graph
         self.observable = observable
+
+        # Set up the cyclic part.
+        if "reference" in kwargs.keys():
+            self.use_reference = True
+            self.reference = kwargs["reference"]
+            if "alpha" in kwargs.keys():
+                self.alpha = kwargs["alpha"]
+            else:
+                raise ValueError("alpha values must be provided with the reference.")
+        else:
+            self.use_reference = False
+            if "alpha" in kwargs.keys():
+                raise ValueError("Reference term must be provided alongside alpha.")
+    
+    @property
+    def qubits(self):
+        return self.qubit_graph.nodes
     
     def circuit(self, gammas: np.ndarray, betas: np.ndarray) -> cirq.Circuit:
         """Make a circuit with the given QAOA parameters. The graph determines
@@ -33,9 +68,12 @@ class CylicQAOAAnsatz:
         qaoa_ckt = cirq.Circuit()
         for q in self.qubit_graph.nodes:
             qaoa_ckt.append(cirq.H(q))
-        for gamma, beta in zip(gammas, betas):
+        for i, (gamma, beta) in enumerate(zip(gammas, betas)):
             qaoa_ckt += gamma_layer(gamma, self.qubit_graph)
             qaoa_ckt += beta_layer(beta, self.qubit_graph)
+            if self.use_reference:
+                assert gammas.size == self.alpha.size, "Size of alpha and gamma must match."
+                qaoa_ckt += alpha_layer(self.alpha[i], self.qubit_graph, self.reference)
         return qaoa_ckt
     
     def energy(self, gammas: np.ndarray, betas: np.ndarray) -> float:
