@@ -1,4 +1,5 @@
 from typing import Tuple, List
+from collections import namedtuple
 import numpy as np
 from numpy import ndarray
 from scipy.optimize import minimize
@@ -7,7 +8,9 @@ import networkx as nx
 from ansatz import CylicQAOAAnsatz
 from maxcut import bitstring_energy
 
-def optimize_ansatz(ansatz: CylicQAOAAnsatz, gamma: ndarray, beta) -> Tuple[float, ndarray, ndarray]:
+OptimizeResult = namedtuple("OptimizeResult", ["energy", "gamma", "beta"])
+
+def optimize_ansatz(ansatz: CylicQAOAAnsatz, gamma: ndarray, beta) -> OptimizeResult:
     """Optimize the Ansatz for given starting values of gamma and beta."""
 
     def objective_callback(vars: np.ndarray):
@@ -23,10 +26,11 @@ def optimize_ansatz(ansatz: CylicQAOAAnsatz, gamma: ndarray, beta) -> Tuple[floa
     optimized_energy =  objective_callback(opt_result.x)
     gamma_opt = opt_result.x[:gamma.size]
     beta_opt = opt_result.x[gamma.size:]
-    return optimized_energy, gamma_opt, beta_opt
+    result = OptimizeResult(optimized_energy, gamma_opt, beta_opt)
+    return result
 
 
-def optimize_ansatz_random_start(ansatz: CylicQAOAAnsatz, layers: int, repetitions: int) -> Tuple[float, ndarray, ndarray]:
+def optimize_ansatz_random_start(ansatz: CylicQAOAAnsatz, layers: int, repetitions: int) -> OptimizeResult:
     """Optimize the Ansatz starting from an ensemble of starting values."""
 
     gammas = np.random.rand(repetitions, layers)
@@ -39,7 +43,10 @@ def optimize_ansatz_random_start(ansatz: CylicQAOAAnsatz, layers: int, repetitio
     return all_outputs[i_opt]
 
 
-def cyclic_train(qubit_graph: nx.Graph, hamiltonian: cirq.PauliSum, p: int, rounds: int) -> Tuple[List[float], List[ndarray], List[ndarray], List[ndarray]]:
+CyclicResult = namedtuple("CyclicResult", ["ansatz", "energies", "references", "gammas", "betas"])
+
+
+def cyclic_train(qubit_graph: nx.Graph, hamiltonian: cirq.PauliSum, p: int, rounds: int) -> CyclicResult:
     """Train by repeatedly taking the lowest-energy string as the reference
     for the next round of training."""
 
@@ -62,4 +69,5 @@ def cyclic_train(qubit_graph: nx.Graph, hamiltonian: cirq.PauliSum, p: int, roun
         # Only set the reference to the new best value is it is the lowest one seen.
         if this_round_energies[i_best] or i == 0:
             reference = sampled_bitstrings[i_best, :]
-    return energies, bitstrings, gammas, betas
+    result = CyclicResult(ansatz, energies, bitstrings, gammas, betas)
+    return result
