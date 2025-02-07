@@ -52,6 +52,7 @@ def main() -> None:
         "energy": regular_result.energy, 
         "gamma": list(regular_result.gamma), "beta": list(regular_result.beta)
     }
+    # TODO save alpha as well
     cyclic_dict = {
         "energies": cyclic_result.energies, 
         "references": [list([bool(ri) for ri in r]) for r in cyclic_result.references],

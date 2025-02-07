@@ -81,7 +81,15 @@ class CylicQAOAAnsatz:
 
         qaoa_ckt = self.circuit(gammas, betas)
         sim = cirq.Simulator()
-        return sim.simulate_expectation_values(qaoa_ckt, [self.observable])[0].real
+        try:
+            energy = sim.simulate_expectation_values(qaoa_ckt, [self.observable])[0].real
+            return energy
+        except ValueError:
+            print(qaoa_ckt)
+            qasm_str = cirq.qasm(qaoa_ckt)
+            with open("circuit.qasm", "w", encoding="utf8") as f:
+                f.write(qasm_str)
+            return None
 
     def energy_grad(self, gammas: np.ndarray, betas: np.ndarray, eps: float=1e-5) -> Tuple[np.ndarray, np.ndarray]:
         """Get the gradient for the given values of gamma and beta. This uses a finite difference."""
