@@ -1,6 +1,8 @@
 *.pdf
 *.csv
 __pycache__/*
-data/*
+#data/*
 .DS_Store
 *.qasm
+*.json
+!input.json
