@@ -2,6 +2,7 @@ from typing import Tuple, List
 import numpy as np
 import networkx as nx
 import cirq
+import qsimcirq
 
 def gamma_layer(gamma: float, qubit_graph: nx.Graph) -> cirq.Circuit:
     gamma_ckt = cirq.Circuit()
@@ -80,7 +81,7 @@ class CylicQAOAAnsatz:
         """Get the energy for this Ansatz with specific values."""
 
         qaoa_ckt = self.circuit(gammas, betas)
-        sim = cirq.Simulator()
+        sim = qsimcirq.QSimSimulator()
         try:
             energy = sim.simulate_expectation_values(qaoa_ckt, [self.observable])[0].real
             return energy
