@@ -1,5 +1,5 @@
 {
-    "hdf_file": "data/ham-graph-complete_bipart.hdf5",
+    "hdf_file": "../data/ham-graph-complete_bipart.hdf5",
     "key": "complbipart-n-9_a-4_b-5",
     "p": 9,
     "rounds": 3
