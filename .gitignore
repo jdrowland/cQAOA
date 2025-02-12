@@ -1,6 +1,7 @@
 *.pdf
 *.csv
 __pycache__/*
+cqaoa/__pycache__/*
 #data/*
 .DS_Store
 *.qasm
