@@ -1,4 +1,10 @@
 *.pdf
 *.csv
 __pycache__/*
-data/*
+cqaoa/__pycache__/*
+#data/*
+.DS_Store
+*.qasm
+*.json
+!input.json
+*.hdf5

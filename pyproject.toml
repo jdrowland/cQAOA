@@ -1,0 +1,12 @@
+[project]
+name = "cqaoa"
+version = "0.5.0"
+dependencies=[
+    "h5py",
+    "numpy",
+    "scipy",
+    "networkx",
+    "cirq",
+    "qsimcirq",
+    "openfermion"
+]
