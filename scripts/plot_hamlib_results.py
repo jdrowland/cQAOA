@@ -21,9 +21,10 @@ def _(mo, os):
     data_dir = "../data"
     all_files = os.listdir(data_dir)
     output_files = [s for s in all_files if "output" in s and ".json" in s]
-    dropdown = mo.ui.dropdown(output_files, label="File to plot:")
+    if len(output_files) == 0:
+        raise ValueError("No files of the form output*.json.")
+    dropdown = mo.ui.dropdown(output_files, label="File to plot:", value=output_files[0], allow_select_none=False)
     mo.vstack([dropdown])
-
     return all_files, data_dir, dropdown, output_files
 
 
@@ -49,7 +50,7 @@ def _(data_dict, mo):
     instance = data_dict["input"]["key"]
     input_file = data_dict["input"]["hdf_file"]
     mo.md(f'''
-    Problem instance is {instance} in file {input_file}.\n
+    Problem instance is `{instance}` in file `{input_file}`.\n
     Optimizing with p= {p} and {rounds} rounds.\n
     Regular QAOA final energy = {regular_energy}.
     ''')
