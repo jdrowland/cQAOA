@@ -11,7 +11,7 @@ from openfermion.transforms import qubit_operator_to_pauli_sum
 from cqaoa.ansatz import CylicQAOAAnsatz
 from cqaoa.hamlib_interface import print_hdf5_structure, read_graph_hdf5, read_openfermion_hdf5
 from cqaoa.training import optimize_ansatz_random_start, cyclic_train
-from cqaoa.maxcut import bitstring_energy
+from cqaoa.maxcut import bitstrings_and_energies_from_df
 
 def maxcut_hamiltonian_to_graph(hamiltonian: of.QubitOperator) -> nx.Graph:
     """Convert a given MaxCut Hamiltonian to a graph."""
@@ -46,8 +46,9 @@ def main() -> None:
     regular_ansatz = CylicQAOAAnsatz(graph, -1.0 * hamiltonian_psum)
     regular_result = optimize_ansatz_random_start(regular_ansatz, input_dict["p"], 10)
     regular_samples = regular_ansatz.sample_bitstrings(regular_result.gamma, regular_result.beta, input_dict["shots"])
-    regular_energies = [bitstring_energy(regular_samples[i, :], -1.0 * hamiltonian_psum) for i in range(regular_samples.shape[0])]
-    regular_best_energy = np.min(regular_energies)
+    regular_bitstrings_energies = bitstrings_and_energies_from_df(regular_samples, -1.0 * hamiltonian_psum)
+    regular_energies = [t[1] for t in regular_bitstrings_energies]
+    regular_best_energy = min(regular_bitstrings_energies, key = lambda t: t[1])[1]
     print("Solving with cyclic QAOA.")
     p_cyclic = input_dict["p"] // input_dict["rounds"]
     cyclic_result = cyclic_train(graph, -1.0 * hamiltonian_psum, p_cyclic, input_dict["rounds"])
@@ -59,7 +60,6 @@ def main() -> None:
         "best_energy": regular_best_energy,
         "gamma": list(regular_result.gamma), "beta": list(regular_result.beta)
     }
-    # TODO save alpha as well
     cyclic_dict = {
         "energy_expectations": cyclic_result.energy_expectations, 
         "sampled_energies": cyclic_result.all_sampled_energies.tolist(),

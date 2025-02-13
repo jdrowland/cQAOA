@@ -1,4 +1,6 @@
+from typing import Tuple, List
 import numpy as np
+import pandas as pd
 import cirq
 import networkx as nx
 
@@ -32,3 +34,17 @@ def bitstring_energy(bits: np.ndarray, hamiltonian: cirq.PauliSum) -> float:
     sim = cirq.Simulator()
     expectation_values = sim.simulate_expectation_values(ckt, [hamiltonian])
     return expectation_values[0].real
+
+
+def bitstrings_and_energies_from_df(df: pd.DataFrame, hamiltonian: cirq.PauliSum) -> List[Tuple[List[bool], float]]:
+    """CyclicQAOAAnsatz.sample_bitstrings returns a pandas dataframe with samples.
+    Convert this to lists of booleans and the energy of each one."""
+
+    bitstring_energy_list = []
+    for i in range(len(df)):
+        bs = []
+        for q in hamiltonian.qubits:
+            bs.append(df.loc[i][str(q)])
+        energy = bitstring_energy(bs, hamiltonian)
+        bitstring_energy_list.append((bs, energy))
+    return bitstring_energy_list

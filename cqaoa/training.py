@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 import cirq
 import networkx as nx
 from .ansatz import CylicQAOAAnsatz
-from .maxcut import bitstring_energy
+from .maxcut import bitstring_energy, bitstrings_and_energies_from_df
 
 OptimizeResult = namedtuple("OptimizeResult", ["energy", "gamma", "beta"])
 
@@ -63,11 +63,16 @@ def cyclic_train(
     betas = []
     for i in range(rounds):
         print(f"Cyclic QAOA round {i} of {rounds}.")
+        # Get the energy of the current reference.
         old_reference_energy = bitstring_energy(reference, hamiltonian)
+        # Train the Ansatz to minimize expectation values.
         ansatz = CylicQAOAAnsatz(qubit_graph, hamiltonian, reference=reference, alpha=alpha)
         energy_expectation, gamma, beta = optimize_ansatz_random_start(ansatz, p, random_starts)
-        sampled_bitstrings = ansatz.sample_bitstrings(gamma, beta, shots)
-        this_round_energies = [bitstring_energy(sampled_bitstrings[i, :], hamiltonian) for i in range(sampled_bitstrings.shape[0])]
+        # Sample bitstrings and energies to choose the lowest one.
+        sample_df = ansatz.sample_bitstrings(gamma, beta, shots)
+        sample_bitstrings_energies = bitstrings_and_energies_from_df(sample_df, hamiltonian)
+        this_round_energies = [t[1] for t in sample_bitstrings_energies]
+        sampled_bitstrings = [t[0] for t in sample_bitstrings_energies]
         i_best = np.argmin(this_round_energies)
         bitstrings.append(reference)
         energies.append(energy_expectation)
@@ -77,6 +82,6 @@ def cyclic_train(
         betas.append(beta)
         # Only set the reference to the new best value is it is the lowest one seen.
         if this_round_energies[i_best] <= old_reference_energy:
-            reference = sampled_bitstrings[i_best, :]
+            reference = sampled_bitstrings[i_best]
     result = CyclicResult(ansatz, energies, all_sampled_energies, lowest_sampled_energies, bitstrings, gammas, betas)
     return result
