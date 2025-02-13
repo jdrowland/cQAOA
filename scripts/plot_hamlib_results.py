@@ -11,9 +11,10 @@ def _():
     import json
     import numpy as np
     import pandas as pd
+    import xarray as xr
     import matplotlib.pyplot as plt
     import seaborn as sns
-    return json, mo, np, os, pd, plt, sns
+    return json, mo, np, os, pd, plt, sns, xr
 
 
 @app.cell
@@ -47,6 +48,7 @@ def _(data_dict, mo):
     p = data_dict["input"]["p"]
     rounds = data_dict["input"]["rounds"]
     regular_energy = data_dict["regular_qaoa"]["energy"]
+    lowest_regular_energy = data_dict["regular_qaoa"]["best_energy"]
     instance = data_dict["input"]["key"]
     input_file = data_dict["input"]["hdf_file"]
     mo.md(f'''
@@ -54,21 +56,50 @@ def _(data_dict, mo):
     Optimizing with p= {p} and {rounds} rounds.\n
     Regular QAOA final energy = {regular_energy}.
     ''')
-    return input_file, instance, p, regular_energy, rounds
+    return (
+        input_file,
+        instance,
+        lowest_regular_energy,
+        p,
+        regular_energy,
+        rounds,
+    )
 
 
 @app.cell
 def _(data_dict, np, plt, regular_energy):
-    cyclic_energies = np.array(data_dict["cyclic_qaoa"]["energies"])
+    cyclic_energies = np.array(data_dict["cyclic_qaoa"]["energy_expectations"])
+    lowest_sampled_energies = np.array(data_dict["cyclic_qaoa"]["lowest_sampled_energies"])
     fig, ax = plt.subplots()
     ax.plot(cyclic_energies, '.', label="Cyclic energies")
+    ax.plot(lowest_sampled_energies, '.', label="Lowest sampled energies")
     ax.hlines([regular_energy], 0.0, float(cyclic_energies.size - 1), 'k',\
+              label="QAOA energy expectation")
+    ax.hlines([regular_energy], 0.0, float(cyclic_energies.size - 1), 'r',\
               label="QAOA energy")
     ax.set_xticks(range(cyclic_energies.size))
     ax.set_xlabel("Round")
     ax.set_ylabel("Energy")
     plt.legend()
-    return ax, cyclic_energies, fig
+    return ax, cyclic_energies, fig, lowest_sampled_energies
+
+
+@app.cell
+def _(data_dict, np, sns, xr):
+    cyclic_samples = np.array(data_dict["cyclic_qaoa"]["sampled_energies"])
+    samples_xr = xr.DataArray(cyclic_samples, dims=["shot", "round"])
+    samples_df = samples_xr.to_dataframe(name="energy", dim_order=["round", "shot"])
+    samples_df.reset_index(inplace=True)
+    fg = sns.FacetGrid(samples_df, row="round", hue="round", aspect=5, height=1.0)
+    fg.map(sns.kdeplot, "energy", color=None, fill=True)
+    return cyclic_samples, fg, samples_df, samples_xr
+
+
+@app.cell
+def _(data_dict, np, sns):
+    regular_samples = np.array(data_dict["regular_qaoa"]["sampled_energies"])
+    sns.kdeplot(regular_samples, fill=True, common_norm=True)
+    return (regular_samples,)
 
 
 @app.cell
