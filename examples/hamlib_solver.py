@@ -42,24 +42,33 @@ def main() -> None:
     graph = maxcut_hamiltonian_to_graph(hamiltonian)
 
     # Solve with
+    print("Solving with regular QAOA.")
     regular_ansatz = CylicQAOAAnsatz(graph, -1.0 * hamiltonian_psum)
     regular_result = optimize_ansatz_random_start(regular_ansatz, input_dict["p"], 10)
+    regular_samples = regular_ansatz.sample_bitstrings(regular_result.gamma, regular_result.beta, input_dict["shots"])
+    regular_energies = [bitstring_energy(regular_samples[i, :], -1.0 * hamiltonian_psum) for i in range(regular_samples.shape[0])]
+    regular_best_energy = np.min(regular_energies)
+    print("Solving with cyclic QAOA.")
     p_cyclic = input_dict["p"] // input_dict["rounds"]
     cyclic_result = cyclic_train(graph, -1.0 * hamiltonian_psum, p_cyclic, input_dict["rounds"])
 
     # Serialize ouptut to JSON file.
     regular_dict = {
         "energy": regular_result.energy, 
+        "sampled_energies": regular_energies,
+        "best_energy": regular_best_energy,
         "gamma": list(regular_result.gamma), "beta": list(regular_result.beta)
     }
     # TODO save alpha as well
     cyclic_dict = {
-        "energies": cyclic_result.energies, 
+        "energy_expectations": cyclic_result.energy_expectations, 
+        "sampled_energies": cyclic_result.all_sampled_energies.tolist(),
+        "lowest_sampled_energies": cyclic_result.lowest_sample_energy,
         "references": [list([bool(ri) for ri in r]) for r in cyclic_result.references],
         "gammas": [list(g) for g in cyclic_result.gammas], 
         "betas": [list(b) for b in cyclic_result.betas]
     }
-    output_dict = {"input": input_dict, "regular_qaoa": regular_dict, "cyclic_qaoa": cyclic_dict}
+    output_dict = {"input_filename": args.input_file, "input": input_dict, "regular_qaoa": regular_dict, "cyclic_qaoa": cyclic_dict}
     with open(args.output_file, "w", encoding="utf8") as f:
         json.dump(output_dict, f)
 

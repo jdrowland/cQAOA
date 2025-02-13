@@ -43,31 +43,40 @@ def optimize_ansatz_random_start(ansatz: CylicQAOAAnsatz, layers: int, repetitio
     return all_outputs[i_opt]
 
 
-CyclicResult = namedtuple("CyclicResult", ["ansatz", "energies", "references", "gammas", "betas"])
+CyclicResult = namedtuple("CyclicResult", ["ansatz", "energy_expectations", "all_sampled_energies", "lowest_sample_energy", "references", "gammas", "betas"])
 
 
-def cyclic_train(qubit_graph: nx.Graph, hamiltonian: cirq.PauliSum, p: int, rounds: int) -> CyclicResult:
+def cyclic_train(
+    qubit_graph: nx.Graph, hamiltonian: cirq.PauliSum, p: int, rounds: int,
+    alpha0: float=2.0, shots: int=1000, random_starts: int=10
+) -> CyclicResult:
     """Train by repeatedly taking the lowest-energy string as the reference
     for the next round of training."""
 
     reference = [True] * len(qubit_graph.nodes)
-    alpha = np.linspace(2.0, 0.0, num=p)
+    alpha = np.linspace(alpha0, 0.0, num=p)
     bitstrings = []
     energies = []
+    lowest_sampled_energies = []
+    all_sampled_energies = np.zeros((shots, rounds), dtype=float)
     gammas = []
     betas = []
     for i in range(rounds):
+        print(f"Cyclic QAOA round {i} of {rounds}.")
+        old_reference_energy = bitstring_energy(reference, hamiltonian)
         ansatz = CylicQAOAAnsatz(qubit_graph, hamiltonian, reference=reference, alpha=alpha)
-        _, gamma, beta = optimize_ansatz_random_start(ansatz, p, 10)
-        sampled_bitstrings = ansatz.sample_bitstrings(gamma, beta, 1000)
+        energy_expectation, gamma, beta = optimize_ansatz_random_start(ansatz, p, random_starts)
+        sampled_bitstrings = ansatz.sample_bitstrings(gamma, beta, shots)
         this_round_energies = [bitstring_energy(sampled_bitstrings[i, :], hamiltonian) for i in range(sampled_bitstrings.shape[0])]
         i_best = np.argmin(this_round_energies)
         bitstrings.append(reference)
-        energies.append(this_round_energies[i_best])
+        energies.append(energy_expectation)
+        lowest_sampled_energies.append(this_round_energies[i_best])
+        all_sampled_energies[:, i] = this_round_energies
         gammas.append(gamma)
         betas.append(beta)
         # Only set the reference to the new best value is it is the lowest one seen.
-        if this_round_energies[i_best] or i == 0:
+        if this_round_energies[i_best] <= old_reference_energy:
             reference = sampled_bitstrings[i_best, :]
-    result = CyclicResult(ansatz, energies, bitstrings, gammas, betas)
+    result = CyclicResult(ansatz, energies, all_sampled_energies, lowest_sampled_energies, bitstrings, gammas, betas)
     return result
