@@ -71,12 +71,12 @@ def _(data_dict, np, plt, regular_energy):
     cyclic_energies = np.array(data_dict["cyclic_qaoa"]["energy_expectations"])
     lowest_sampled_energies = np.array(data_dict["cyclic_qaoa"]["lowest_sampled_energies"])
     fig, ax = plt.subplots()
-    ax.plot(cyclic_energies, '.', label="Cyclic energies")
-    ax.plot(lowest_sampled_energies, '.', label="Lowest sampled energies")
+    ax.plot(cyclic_energies, '.', label="Cyclic energy expectation")
+    ax.plot(lowest_sampled_energies, '.', label="Cyclic lowest sampled energy")
     ax.hlines([regular_energy], 0.0, float(cyclic_energies.size - 1), 'k',\
               label="QAOA energy expectation")
     ax.hlines([regular_energy], 0.0, float(cyclic_energies.size - 1), 'r',\
-              label="QAOA energy")
+              label="QAOA lowest sampled energy")
     ax.set_xticks(range(cyclic_energies.size))
     ax.set_xlabel("Round")
     ax.set_ylabel("Energy")
