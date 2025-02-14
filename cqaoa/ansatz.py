@@ -5,10 +5,23 @@ import networkx as nx
 import cirq
 import qsimcirq
 
-def gamma_layer(gamma: float, qubit_graph: nx.Graph) -> cirq.Circuit:
-    gamma_ckt = cirq.Circuit()
-    for q1, q2 in qubit_graph.edges:
-        gamma_ckt.append(cirq.ZZ(q1, q2) ** gamma)
+def gamma_layer(gamma: float, qubit_graph: nx.Graph, weighted: bool) -> cirq.Circuit:
+    if weighted:
+        gamma_ckt = cirq.Circuit()
+        for q1, q2, w in qubit_graph.edges(data=True):
+            if q1 == q2:
+                gamma_ckt.append(cirq.Z(q1) ** (gamma*w['weight']))
+            else:
+                gamma_ckt.append(cirq.ZZ(q1, q2) ** (gamma*w['weight']))
+        return gamma_ckt
+    else:
+        gamma_ckt = cirq.Circuit()
+        for q1, q2 in qubit_graph.edges:
+            #Enables Ising-like multigraphs:
+            if q1 == q2:
+                gamma_ckt.append(cirq.Z(q1) ** gamma)
+            else:
+                gamma_ckt.append(cirq.ZZ(q1, q2) ** gamma)
     return gamma_ckt
 
 
@@ -30,19 +43,25 @@ def alpha_layer(alpha: float, qubit_graph: nx.Graph, reference: List[bool]) -> c
 class CylicQAOAAnsatz:
     """Class to generate cyclic QAOA Ansatz circuits."""
 
-    def __init__(self, qubit_graph, observable, **kwargs):
+    def __init__(self, qubit_graph, observable, weighted=False, **kwargs):
         """Initialize an instance of the CylicQAOA Ansatz.
         
-        Arugments:
+        Arguments:
         qubit_graph: graph determining which qubits can interact.
         observable: observable for the problem (e.g. Hamiltonian for MaxCut)
+        weighted: Enables the use of a weighted qubit graph
         
         Optional keyword arguments:
         reference: list of booleans, reference bitstring for the Ansatz.
-        alpha: np.ndarray, coefficient for the refence term in this Hamiltonian."""
+        alpha: np.ndarray, coefficient for the refence term in this Hamiltonian.
+        """
 
         self.qubit_graph = qubit_graph
         self.observable = observable
+        self.weighted = weighted
+
+        if not self.weighted and nx.is_weighted(qubit_graph):
+            print("Weighted graph submitted without weighted=True flag while building the ansatz.  Did you mean to do this?")
 
         # Set up the cyclic part.
         if "reference" in kwargs.keys():
@@ -71,7 +90,7 @@ class CylicQAOAAnsatz:
         for q in self.qubit_graph.nodes:
             qaoa_ckt.append(cirq.H(q))
         for i, (gamma, beta) in enumerate(zip(gammas, betas)):
-            qaoa_ckt += gamma_layer(gamma, self.qubit_graph)
+            qaoa_ckt += gamma_layer(gamma, self.qubit_graph, self.weighted)
             qaoa_ckt += beta_layer(beta, self.qubit_graph)
             if self.use_reference:
                 assert gammas.size == self.alpha.size, "Size of alpha and gamma must match."
