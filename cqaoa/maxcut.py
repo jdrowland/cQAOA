@@ -40,10 +40,12 @@ def bitstrings_and_energies_from_df(df: pd.DataFrame, hamiltonian: cirq.PauliSum
     """CyclicQAOAAnsatz.sample_bitstrings returns a pandas dataframe with samples.
     Convert this to lists of booleans and the energy of each one."""
 
+    print(df.columns)
     bitstring_energy_list = []
     for i in range(len(df)):
         bs = []
         for q in hamiltonian.qubits:
+            print(q)
             bs.append(df.loc[i][str(q)])
         energy = bitstring_energy(bs, hamiltonian)
         bitstring_energy_list.append((bs, energy))
