@@ -111,6 +111,46 @@ class CylicQAOAAnsatz:
             with open("circuit.qasm", "w", encoding="utf8") as f:
                 f.write(qasm_str)
             raise exc
+    
+    def energy_sampled(self, gammas: np.ndarray, betas: np.ndarray, shots: int = 1000) -> float:
+        """Get the energy via sampling for this Ansatz with specific values."""
+        
+        qaoa_ckt = self.circuit(gammas, betas)
+        sim = cirq.Simulator()
+        state = sim.simulate(qaoa_ckt).final_state_vector
+        
+        probs = np.abs(state)**2
+        probs = probs / probs.sum()
+        indices = np.random.choice(len(state), size=shots, p=probs)
+        
+        n = len(self.qubits)
+        bitstrings = ((indices[:, None] >> np.arange(n)[::-1]) & 1).astype(np.int8)
+        
+        if not hasattr(self, '_energy_cache'):
+            qs = list(self.qubit_graph.nodes())
+            self._q_to_idx = {q: i for i, q in enumerate(qs)}
+            self._edges = []
+            self._local_fields = []
+            for q1, q2, data in self.qubit_graph.edges(data=True):
+                weight = data.get('weight', 1.0) if self.weighted else 1.0
+                idx1 = self._q_to_idx[q1]
+                idx2 = self._q_to_idx[q2]
+                if q1 == q2:
+                    self._local_fields.append((idx1, weight))
+                else:
+                    self._edges.append((idx1, idx2, weight))
+            self._energy_cache = True
+        
+        z_values = 1 - 2 * bitstrings
+        energies = np.zeros(shots)
+        
+        for (idx, weight) in self._local_fields:
+            energies -= weight * z_values[:, idx]
+        
+        for (idx1, idx2, weight) in self._edges:
+            energies -= weight * (-0.5 * z_values[:, idx1] * z_values[:, idx2] + 0.5)
+        
+        return np.mean(energies)
 
     def energy_grad(self, gammas: np.ndarray, betas: np.ndarray, eps: float=1e-5) -> Tuple[np.ndarray, np.ndarray]:
         """Get the gradient for the given values of gamma and beta. This uses a finite difference."""
