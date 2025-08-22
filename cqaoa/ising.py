@@ -11,9 +11,9 @@ def ising_hamiltonian(qubit_graph: nx.Graph, weighted=False) -> cirq.PauliSum:
     if weighted:
         for q1, q2, w in qubit_graph.edges(data=True):
             if q1 == q2:
-                ham -= w['weight']* cirq.PauliString({q1:cirq.Z})
+                ham -= cirq.PauliString({q1:cirq.Z}) * w['weight']
             else:
-                ham -= w['weight'] * edge_operator(q1, q2)
+                ham -= edge_operator(q1, q2) * w['weight']
     else:
         for q1, q2 in qubit_graph.edges():
             if q1 == q2:
