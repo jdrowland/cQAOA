@@ -9,3 +9,4 @@ scripts/__pycache__/*
 *.json
 !input.json
 *.hdf5
+cqaoa.egg-info/*
