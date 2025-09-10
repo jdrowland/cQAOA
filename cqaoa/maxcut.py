@@ -25,6 +25,8 @@ def bitstring_energy(bits: np.ndarray, hamiltonian: cirq.PauliSum) -> float:
     # Build a circuit that prepares the given computational basis state.
     ckt = cirq.Circuit()
     qs = hamiltonian.qubits
+    assert len(qs) == bits.size, \
+        f"Got {bits.size} bits, but Hamiltonian has {len(qs)} qubits."
     for q, bit in zip(qs, bits):
         if bit:
             ckt.append(cirq.X(q))
