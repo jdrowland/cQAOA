@@ -66,6 +66,7 @@ def lowest_energy(samples, hamiltonian):
 
 
 def energy_heatmap(
+    qubit_graph: nx.Graph,
     gammas: np.ndarray, betas: np.ndarray, alpha: float,
     bitstring: np.ndarray, graph: nx.Graph, p: int, shots
 ) -> Tuple[np.ndarray, ...]:
@@ -150,7 +151,7 @@ def main():
     #     all_sampled_energies[:, :, i] = sampled_energies
     pool = ProcessPool(nodes=5)
     results = pool.map(
-        lambda alpha: energy_heatmap(gammas, betas, alpha, min_energy_bitstring, \
+        lambda alpha: energy_heatmap(qubit_graph, gammas, betas, alpha, min_energy_bitstring, \
                                     qubit_graph, p, shots),
         alphas
     )
