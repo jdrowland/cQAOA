@@ -1,3 +1,7 @@
+[tool.setuptools.packages.find]
+where = ["./"]
+include = ["cqaoa"]
+
 [project]
 name = "cqaoa"
 version = "0.5.0"
