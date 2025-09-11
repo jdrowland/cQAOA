@@ -57,7 +57,7 @@ def cirq_samples_to_sorted_ndarray(samples: pd.DataFrame) -> np.ndarray:
     return samples_np
 
 
-def lowest_energy(samples):
+def lowest_energy(samples, hamiltonian):
     sample_array = cirq_samples_to_sorted_ndarray(samples)
     sample_energies = [bitstring_energy(bs, hamiltonian) for bs in sample_array]
     min_energy_idx = np.argmin(sample_energies)
@@ -83,7 +83,7 @@ def energy_heatmap(
             ckt_gammas = np.array([gamma] * p)
             ckt_betas = np.array([beta] * p)
             samples = ansatz.sample_bitstrings(ckt_gammas, ckt_betas, 10_000)
-            sample_energy, _ = lowest_energy(samples)
+            sample_energy, _ = lowest_energy(samples, hamiltonian)
             energies[i, j] = ansatz.energy(ckt_gammas, ckt_betas)
             sampled_energies[i, j] = sample_energy
     return (energies, sampled_energies)
@@ -132,7 +132,7 @@ def main():
     print(samples.head())
 
     # Sample bitstrings and get the one with the lowest energy.
-    min_energy, min_energy_bitstring = lowest_energy(samples)
+    min_energy, min_energy_bitstring = lowest_energy(samples, hamiltonian)
     print(f"Bitstring \n{min_energy_bitstring}\nhas energy {min_energy}.")
 
     #  Calculate energy heatmaps
